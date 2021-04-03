@@ -1,0 +1,12 @@
+#1. 测试数据维护和沉淀
+Type 1. using insertion/deletion in batch for 数据库静态表或者上游数据库直接 LOAD进来的表
+Type 2. OPD 文件 maintain files -> revert back db data into files?
+
+#2. 回归测试用例维护和沉淀
+UI自动化回归维护与沉淀
+API自动化回归维护与沉淀
+数据库Report逻辑维护
+PP逻辑维护
+
+#3.数据库逻辑代码走读
+测试数据自动化mock或者快速mock
