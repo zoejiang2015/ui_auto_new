@@ -1,5 +1,5 @@
 自动化项目前期准备工作：
-    -- 具体图文可参照： http://10.10.201.225:8090/pages/viewpage.action?pageId=22972438
+    -- 具体图文可参照： 
 1. 配置好本地jdk、python、pycharm环境
 2. 将ui_driver目录里的chromedriver放到和python的安装目录同级目录下，当前驱动适配85.0.xx版本浏览器
    查看当前浏览器版本：浏览器输入栏输入chrome://version/ 查看内网chrome浏览器版本，如chromedriver不适配，
