@@ -1,0 +1,185 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import os
+import time
+from typing import List
+
+import allure
+import pytest
+
+from util.logger import Logger
+from util.read_config import ReadConfig
+from util.ui_driver.driver_base import WebDriver
+from util.config import Config
+
+log = Logger(logger='root_conftest').logger
+
+config = ReadConfig()
+mes_url = config.url['mes_url']
+bigscreen_url = config.url['bigscreen_url']
+username = config.user["loginName"]
+username2 = config.user2["loginName"]
+password = config.user["password"]
+shop_name = config.shopName
+shop_name2 = config.shopName2
+local_driver = 'local_driver'
+remote_driver = 'remote_driver'
+
+def login(url, username, password, shop_name):
+    start = time.time()
+    driver.maximize_window()
+    driver.implicitly_wait_default()
+    driver.driver.set_page_load_timeout(60)
+    driver.driver.set_script_timeout(60)
+    end = time.time()
+    duration = end - start
+    log.info(f'打开浏览器共计【{round(duration, 2)}】秒')
+    start = time.time()
+    driver.get(url)
+    driver.original_sendkeys('id', 'accountNo', username)
+    driver.original_sendkeys('id', 'password', password)
+    end = time.time()
+    duration = end - start
+    log.info(f'页面加载出来到username输入成功共计【{round(duration, 2)}】秒')
+    if not driver.driver.find_element('id', 'accountNo').text and duration <= 60:
+        driver.original_click('cssSelector', '.ant-btn-primary')
+        driver.original_click('xpath', '//div[text()=' + shop_name + ']')
+
+
+@pytest.fixture()
+def start_browser():
+    global driver
+    driver = WebDriver(local_driver)
+    try:
+        login(mes_url, username, password, shop_name)
+    except:
+        driver.quit()
+        driver = WebDriver(local_driver)
+        try:
+            login(mes_url, username, password, shop_name)
+        except:
+            driver.quit()
+            driver = WebDriver(local_driver)
+            try:
+                login(mes_url, username, password, shop_name)
+            except:
+                driver.quit()
+    yield driver
+    driver.quit()
+
+
+@pytest.fixture()
+def start_local_browser():   # 启动本地浏览器，在写导入导出的用例中使用
+    global driver
+    driver = WebDriver(local_driver)
+    try:
+        login(mes_url, username, password, shop_name)
+    except:
+        driver.quit()
+        driver = WebDriver(local_driver)
+        try:
+            login(mes_url, username, password, shop_name)
+        except:
+            driver.quit()
+            driver = WebDriver(local_driver)
+            try:
+                login(mes_url, username, password, shop_name)
+            except:
+                driver.quit()
+    yield driver
+    driver.quit()
+
+
+@pytest.fixture()
+def start_another_role():  # 18186552278账号下的UI自动化工厂的曹阿蛮角色
+    global driver
+    driver = WebDriver(local_driver)
+    try:
+        login(mes_url, username2, password, shop_name)
+    except:
+        driver.quit()
+        driver = WebDriver(local_driver)
+        try:
+            login(mes_url, username2, password, shop_name)
+        except:
+            driver.quit()
+            driver = WebDriver(local_driver)
+            try:
+                login(mes_url, username2, password, shop_name)
+            except:
+                driver.quit()
+    yield driver
+    driver.quit()
+
+
+@pytest.fixture()
+def start_bigscreen_browser():
+    global driver
+    driver = WebDriver(local_driver)
+    try:
+        login(bigscreen_url, username, password, shop_name)
+    except:
+        driver.quit()
+        driver = WebDriver(local_driver)
+        try:
+            login(bigscreen_url, username, password, shop_name)
+        except:
+            driver.quit()
+            driver = WebDriver(local_driver)
+            try:
+                login(bigscreen_url, username, password, shop_name)
+            except:
+                driver.quit()
+    yield driver
+    driver.quit()
+
+
+def pytest_configure(config):
+    config.addinivalue_line('markers', 'P0')
+    config.addinivalue_line('markers', 'P1')
+    config.addinivalue_line('markers', 'P2')
+    config.addinivalue_line('markers', 'P3')
+    config.addinivalue_line('markers', 'gengzhuonan')
+    config.addinivalue_line('markers', 'yuanjie')
+    config.addinivalue_line('markers', 'chenshibin')
+    config.addinivalue_line('markers', 'shangjie')
+    config.addinivalue_line('markers', 'jianjun')
+    config.addinivalue_line('markers', 'zhoujin')
+    config.addinivalue_line('markers', 'lixingling')
+    config.addinivalue_line('markers', 'machao')
+    config.addinivalue_line('markers', 'xiaolong')
+
+
+def pytest_collection_modifyitems(
+        session: "Session", config: "Config", items: List["Item"]) -> None:
+    # item表示每个测试用例，解决用例名称中文显示问题
+    for item in items:
+        item.name = item.name.encode("utf-8").decode("unicode-escape")
+        item._nodeid = item._nodeid.encode("utf-8").decode("unicode-escape")
+
+
+# @pytest.hookimpl(tryfirst=True, hookwrapper=True)
+# def pytest_runtest_makereport(item, call):
+#     '''
+#     获取每个用例状态的钩子函数
+#     :param item:
+#     :param call:
+#     :return:
+#     '''
+#     # 获取钩子方法的调用结果
+#     outcome = yield
+#     rep = outcome.get_result()
+#     # 仅仅获取用例call 执行结果是失败的情况, 不包含 setup/teardown
+#     if rep.when == "call" and rep.failed:
+#         mode = "a" if os.path.exists("failures") else "w"
+#         with open("failures", mode) as f:
+#             # let's also access a fixture for the fun of it
+#             if "tmpdir" in item.fixturenames:
+#                 extra = " (%s)" % item.funcargs["tmpdir"]
+#             else:
+#                 extra = ""
+#             f.write(rep.nodeid + extra + "\n")
+#         # 添加allure报告截图
+#         if hasattr(driver, "get_screenshot_as_png"):
+#             with allure.step('添加失败截图...'):
+#                 allure.attach(driver.driver.get_screenshot_as_png(), "失败截图", allure.attachment_type.PNG)
