@@ -1,0 +1,426 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import time
+
+import allure
+import pytest
+
+from business.MES.sales_manage.sales_order import SalesOrder
+from util.assertion import Assertion
+from util.get_all_case import GetAllCases
+from util.logger import Logger
+from util.random_util import RandomUtil
+
+log = Logger(logger="TestSalesOrder").logger
+
+
+@pytest.fixture
+def init_sales_order_business(start_browser):
+    driver = start_browser
+    sales_order = SalesOrder(driver)
+    assertion = Assertion(driver)
+    yield sales_order, assertion
+
+
+class TestSalesOrder(GetAllCases):
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_add_button_function(self, init_sales_order_business):
+        """ 137 1 点击新增按钮 在列表最上方添加新的单元格"""
+        flag = init_sales_order_business[0].check_add_button_function()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_sales_order_table_header(self, init_sales_order_business):
+        """ 2573 1.1二级菜单进入销售订单；检查销售订单列表页的按钮是否为 【刷新】【新增】  【删除】"""
+        flag, flag2, flag3 = init_sales_order_business[0].check_sales_order_table_header()
+        init_sales_order_business[1].assert_true(flag)
+        init_sales_order_business[1].assert_true(flag2)
+        init_sales_order_business[1].assert_true(flag3)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_sales_order_must_input_column(self, init_sales_order_business):
+        """ 2573 1.2 1.2新增销售订单，检查必填字段；进入销售订单详情页面，检查必填字段* ，表头：订单编号、下单日期、
+                    客户编号，税率；表身：产品编码、数量、含税单价、含税金额；"""
+        class_1, class_2, class_3, class_4 = init_sales_order_business[0].check_sales_order_must_input_column()
+        init_sales_order_business[1].assert_text_equal(class_1, 'ant-form-item-required ant-form-item-no-colon')
+        init_sales_order_business[1].assert_text_equal(class_2, 'ant-form-item-required ant-form-item-no-colon')
+        init_sales_order_business[1].assert_text_equal(class_3, 'ant-form-item-required ant-form-item-no-colon')
+        init_sales_order_business[1].assert_text_equal(class_4, 'ant-form-item-required ant-form-item-no-colon')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_sales_number_generate_rule(self, init_sales_order_business):
+        """ 2573 1.3检查订单编号生成规格；SO+YYYYMMNN+001；不限制单数；"""
+        number, actual_number = init_sales_order_business[0].check_sales_number_generate_rule()
+        init_sales_order_business[1].assert_text_in_expect(number, actual_number)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_order_date_default(self, init_sales_order_business):
+        """ 2573 1.4下单日期默认带出系统当日的日期；格式为年月日，2020-01-04；可修改，修改范围为当日及当日以后的日期，前端 限制；"""
+        now_date, default_date = init_sales_order_business[0].check_order_date_default()
+        init_sales_order_business[1].assert_text_equal(now_date, default_date)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_customer_code(self, init_sales_order_business):
+        """ 2573 1.5 客户编号 选择客户主数据，启用的，未删除的主数据；"""
+        flag = init_sales_order_business[0].check_customer_code()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_deliver_date(self, init_sales_order_business):
+        """ 2573 1.6交货日期 非必填，选择输入，范围为当日及当日以后的日期，前端限制；"""
+        init_sales_order_business[0].check_deliver_date()
+        init_sales_order_business[1].assert_contains_text(time.strftime('%Y-%m-%d'))
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_receive_date(self, init_sales_order_business):
+        """ 2573 1.7收货日期 非必填，选择输入，范围为当日及当日以后的日期，前端限制；"""
+        init_sales_order_business[0].check_receive_date()
+        init_sales_order_business[1].assert_contains_text(time.strftime('%Y-%m-%d'))
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_receive_man(self, init_sales_order_business):
+        """ 2573 1.8收货人 非必填；默认客户带出，可修改，"""
+        flag = init_sales_order_business[0].check_receive_man()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_receive_address(self, init_sales_order_business):
+        """ 2573 1.9 收货地址 非必填；默认客户带出，可修改"""
+        flag, num = init_sales_order_business[0].check_receive_address()
+        init_sales_order_business[1].assert_true(flag)
+        init_sales_order_business[1].assert_text_equal(num, 0)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_account_charge_mode(self, init_sales_order_business):
+        """ 2573 1.10结款方式 非必填；默认客户带出，可修改"""
+        flag, num = init_sales_order_business[0].check_account_charge_mode()
+        init_sales_order_business[1].assert_true(flag)
+        init_sales_order_business[1].assert_text_equal(num, 0)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_tax_rate(self, init_sales_order_business):
+        """ 2573 1.11税率 必填，默认带出工厂业务规则设置的税率；可修改，输入范围为0货1-100的整数；"""
+        text, text2 = init_sales_order_business[0].check_tax_rate()
+        init_sales_order_business[1].assert_text_equal(text2, text)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_notax_rate(self, init_sales_order_business):
+        """ 2573 1.12未税金额合计 不可编辑，表头未税金额合计=∑表身未税金额累加；"""
+        flag = init_sales_order_business[0].check_notax_rate()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_have_tax_rate(self, init_sales_order_business):
+        """ 2573 1.13含税金额合计 不可编辑，表头含税金额合计=∑表身含税金额的累加；；"""
+        flag = init_sales_order_business[0].check_have_tax_rate()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_tax_amount(self, init_sales_order_business):
+        """ 2573 1.14税额合计 不可编辑，表头税额合计=表头含税金额合计-表头未税金额合计；；"""
+        flag = init_sales_order_business[0].check_tax_amount()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_salesman(self, init_sales_order_business):
+        """ 2573 1.15销售员 非必填，选择人员主数据，启用的未删除的人员；"""
+        flag, num = init_sales_order_business[0].check_salesman()
+        init_sales_order_business[1].assert_true(flag)
+        init_sales_order_business[1].assert_greater_than(num, 0)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_tax_amount(self, init_sales_order_business):
+        """ 25731.14税额合计 不可编辑，表头税额合计=表头含税金额合计-表头未税金额合计；；"""
+        flag = init_sales_order_business[0].check_tax_amount()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_remark(self, init_sales_order_business):
+        """ 2573 1.16备注 非必填，长度限制255；"""
+        flag, num = init_sales_order_business[0].check_remark()
+        init_sales_order_business[1].assert_true(flag)
+        init_sales_order_business[1].assert_text_equal(num, 255)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_line_number(self, init_sales_order_business):
+        """ 2573 表身字段 2.1行号 唯一性，必填，自增序列，默认第一行行号为1，每增加1行行号默认+1，保存前行号可改，表身按行号排序，"""
+        one, two = init_sales_order_business[0].check_line_number()
+        init_sales_order_business[1].assert_text_in_expect('1', one)
+        init_sales_order_business[1].assert_text_in_expect('2', two)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_line_number(self, init_sales_order_business):
+        """ 2573 1.16备注 非必填，长度限制255；"""
+        flag, num = init_sales_order_business[0].check_remark()
+        init_sales_order_business[1].assert_true(flag)
+        init_sales_order_business[1].assert_text_equal(num, 255)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_have_header_no_table(self, init_sales_order_business):
+        """ 2574 4 新增保存保存校验 4.1表头已经填写，表身没有行；报错“明细必填不能为空”"""
+        init_sales_order_business[0].check_have_header_no_table()
+        init_sales_order_business[1].assert_contains_text('明细必填不能为空')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_not_have_material_code(self, init_sales_order_business):
+        """ 2574 表头客户编号未填写"""
+        init_sales_order_business[0].check_not_have_material_code()
+        init_sales_order_business[1].assert_contains_text('请输入客户编码')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_not_have_number(self, init_sales_order_business):
+        """ 2574 4.2表头已经填写，表身没有行已经填写了物料” """
+        text = init_sales_order_business[0].check_not_choose_material()
+        init_sales_order_business[1].assert_text_in_expect('0', text)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_not_input_number(self, init_sales_order_business):
+        """ 4.3表头已经填写，表身没有行已经填写了物料没有填写数量 报错“数量参数必须大于0” """
+        init_sales_order_business[0].check_not_input_number()
+        init_sales_order_business[1].assert_contains_text('数量必须大于0')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_not_input_MTO(self, init_sales_order_business):
+        """ 4.4表头已经填写，表身没有行已经填写了物料填写数量等相关字段，并且物料启用mto,且mto字段是空的， 报错“MTO必填不能为空” """
+        init_sales_order_business[0].check_not_input_MTO()
+        init_sales_order_business[1].assert_contains_text('物料启用MTO管理,MTO不能为空')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_line_number(self, init_sales_order_business):
+        """ 2574 2.1行号 唯一性，必填，自增序列，默认第一行行号为1，每增加1行行号默认+1，保存前行号可改，表身按行号排序 """
+        num, num2 = init_sales_order_business[0].check_table_line_number()
+        init_sales_order_business[1].assert_text_equal(num, '1')
+        init_sales_order_business[1].assert_text_equal(num2, '2')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_material_code(self, init_sales_order_business):
+        """ 2574 2.2产品编码 必填，模糊搜索输入或者来源窗搜索输入，带出名称和规格，单位；"""
+        flag = init_sales_order_business[0].check_table_material_code()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_material_name(self, init_sales_order_business):
+        """ 2574 2.3产品名称 必填，模糊搜索输入或者来源窗搜索输入，带出编码和规格，单位；"""
+        num = init_sales_order_business[0].check_table_material_name()
+        init_sales_order_business[1].assert_greater_than(num, 0)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_material_size(self, init_sales_order_business):
+        """ 2574 2.4产品规格 非必填；根据产品编码和产品名产带出，可修改；"""
+        num = init_sales_order_business[0].check_table_material_size()
+        init_sales_order_business[1].assert_greater_than(num, 0)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_MTO(self, init_sales_order_business):
+        """ 2574 2.5MTO号 物料启用MTO的话必填，默认带出销售订单号，可修改；如果选择的物料不启用MTO号的话，不可编辑；"""
+        num = init_sales_order_business[0].check_table_MTO()
+        init_sales_order_business[1].assert_greater_than(num, 0)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_amount(self, init_sales_order_business):
+        """ 2574 2.6数量 必填且必须大于0；"""
+        init_sales_order_business[0].check_table_amount()
+        init_sales_order_business[1].assert_contains_text('数量必须大于0')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_unit(self, init_sales_order_business):
+        """ 2574 2.7单位 选物料的时候带出，有单位别名的时候显示单位别名，无单位别名的时候显示基本单位；"""
+        num = init_sales_order_business[0].check_table_unit()
+        init_sales_order_business[1].assert_greater_than(num, 0)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_deliver_date(self, init_sales_order_business):
+        """ 2574 2.8交货日期 非必填，如果表头已经填写，默认带出表头的日期，可修改，"""
+        date, now = init_sales_order_business[0].check_table_deliver_date()
+        init_sales_order_business[1].assert_text_equal(date, now)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_table_ship_date(self, init_sales_order_business):
+        """ 2574 2.9计划发货日期 非必填，如果表头已经填写，默认带出表头的日期，可修改，"""
+        date, now = init_sales_order_business[0].check_table_ship_date()
+        init_sales_order_business[1].assert_text_equal(date, now)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_have_tax_unit_price(self, init_sales_order_business):
+        """ 2574 2.10 含税单价 必填，手工输入，防呆控制，含税单价>=0，单价为0表示赠品；"""
+        init_sales_order_business[0].check_have_tax_unit_price()
+        init_sales_order_business[1].assert_contains_text('数字大于等于0')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_caculate_have_tax_unit_price(self, init_sales_order_business):
+        """ 2574 2.11含税金额 含税金额=含税单价*数量，"""
+        mount = init_sales_order_business[0].caculate_have_tax_unit_price()
+        init_sales_order_business[1].assert_text_equal(mount, '500')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_tax_rate_value(self, init_sales_order_business):
+        """ 2574 2.12税率 税率：必填，默认从表头上带出，如果表头为空则从物料上带。防呆控制，税率>=0，0表示免税；（表头不会为空）"""
+        rate, table_rate = init_sales_order_business[0].check_tax_rate_value()
+        init_sales_order_business[1].assert_text_equal(rate, table_rate)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_no_tax_rate_editable(self, init_sales_order_business):
+        """ 2574 2.13未税单价 不可编辑，未税单价=含税单价/（1+税率）；"""
+        no_tax, notax_price, attr = init_sales_order_business[0].check_no_tax_rate_editable()
+        init_sales_order_business[1].assert_text_equal(no_tax, notax_price)
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_no_tax_mount(self, init_sales_order_business):
+        """ 2574 2.14未税金额 不可编辑，未税金额=未税单价*数量；"""
+        no_tax_on_page, no_tax_mount, attr = init_sales_order_business[0].check_no_tax_mount()
+        init_sales_order_business[1].assert_text_equal(no_tax_on_page, no_tax_mount)
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_tax_mount(self, init_sales_order_business):
+        """ 2574 2.15税额 不可编辑，税额=含税金额-未税金额；"""
+        tax_mount, tax_mount_on_page, attr = init_sales_order_business[0].check_tax_mount()
+        init_sales_order_business[1].assert_text_equal(tax_mount, tax_mount_on_page)
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_wait_deliver_mount(self, init_sales_order_business):
+        """ 2574 2.16待发数量 待发数量为虚字段，每次打开销售订单时虚字段需要自动计算。待发数量=数量-发货单数量-取消数量。"""
+        wait_deliver_mount, attr = init_sales_order_business[0].check_wait_deliver_mount()
+        init_sales_order_business[1].assert_text_equal(wait_deliver_mount, '50')
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_deliver_order_mount(self, init_sales_order_business):
+        """ 2574 2.17发货单数量 对应的发货单数量的累计"""
+        wait_deliver_mount, attr = init_sales_order_business[0].check_deliver_order_mount()
+        init_sales_order_business[1].assert_text_equal(wait_deliver_mount, '0')
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_outhouse_mount(self, init_sales_order_business):
+        """ 2574 2.18出库数量 对应的出库数量的累计"""
+        outhouse_mount_on_page, attr = init_sales_order_business[0].check_outhouse_mount()
+        init_sales_order_business[1].assert_text_equal(outhouse_mount_on_page, '0')
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_sales_return_number(self, init_sales_order_business):
+        """ 2.20 退货数量 """
+        sales_return_on_page, attr = init_sales_order_business[0].check_sales_return_number()
+        init_sales_order_business[1].assert_text_equal(sales_return_on_page, '0')
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_cancel_number(self, init_sales_order_business):
+        """ 2574 2.21取消数量 可取消条件下取消的数量 """
+        cancel_on_page, attr = init_sales_order_business[0].check_cancel_number()
+        init_sales_order_business[1].assert_text_equal(cancel_on_page, '0')
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_allow_over_deliver_number(self, init_sales_order_business):
+        """ 2574 2.22允许最大超发数量 1、工厂业务规则为按照订单数量超发的时候可以编辑输入； """
+        flag, attr = init_sales_order_business[0].check_allow_over_deliver_number()
+        init_sales_order_business[1].assert_true(flag)
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_over_deliver_number(self, init_sales_order_business):
+        """ 2574 2.23超发数量 """
+        over_deliver_number_on_page, attr = init_sales_order_business[0].check_over_deliver_number()
+        init_sales_order_business[1].assert_text_equal(over_deliver_number_on_page, '0')
+        init_sales_order_business[1].assert_text_equal(attr, 'column-right ant-table-row-cell-break-word')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_packbox_number(self, init_sales_order_business):
+        """ 2574 2.24装箱数量 装箱数量，手工输入，正整数限制；"""
+        init_sales_order_business[0].check_packbox_number()
+        init_sales_order_business[1].assert_contains_text('请输入大于等于0的整数')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_box_number(self, init_sales_order_business):
+        """ 2574 2.25箱数 自动计算，箱数=数量/装箱数量，存在余数则进1位取整，正整数限制；；"""
+        box_number_on_page = init_sales_order_business[0].check_box_number()
+        init_sales_order_business[1].assert_text_equal(box_number_on_page, '3')
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_convert_rate(self, init_sales_order_business):
+        """ 2574 2.26 换算率 非必填，工厂业务规则启用双单位为是的时候才显示；根据交易单位带出，在计量单位里面设置好；换算率”"""
+        flag = init_sales_order_business[0].check_convert_rate()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_charge_unit(self, init_sales_order_business):
+        """ 2574 2.27交易单位 非必填，工厂业务规则启用双单位为是的时候才显示；交易单位：手工输入，支持模糊查找。"""
+        flag = init_sales_order_business[0].check_charge_unit()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_charge_number(self, init_sales_order_business):
+        """ 2574 2.28交易数量 非必填，工厂业务规则启用双单位为是的时候才显示；"""
+        flag = init_sales_order_business[0].check_charge_number()
+        init_sales_order_business[1].assert_true(flag)
+
+    @pytest.mark.P0
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_check_remark_value(self, init_sales_order_business):
+        """ 2574 2.29备注 """
+        ran_remark = init_sales_order_business[0].check_remark_value()
+        init_sales_order_business[1].assert_contains_text(ran_remark)
+
+
+
+
+
+
+
