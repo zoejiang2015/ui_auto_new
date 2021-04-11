@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import pytest
+
+from data_helper.shop_data_init import ShopDataInit
+from util.api_util.api.init_basic_data import InitData
+from util.read_config import ReadConfig
+
+username = ReadConfig().user["loginName"]
+password = ReadConfig().user["password"]
+shop_id = ReadConfig().shopId
+
+
+@pytest.fixture()
+def init_all_basic_data():
+    """ 初始化所有基础数据"""
+    ShopDataInit(loginName=username, password=password, shopId=shop_id).init_shop_data()
+
+
+@pytest.fixture()
+def delete_all_basic_data():
+    """  删除所有脏数据 """
+    InitData().delete_all_basic_data()
